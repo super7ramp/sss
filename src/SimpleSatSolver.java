@@ -4,11 +4,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-
 /**
  * A literal in a SAT problem.
  *
- * @param value the value of the literal
+ * @param value the value of the literal - cannot be 0
  */
 record Literal(int value) {
     Literal {
@@ -22,6 +21,11 @@ record Literal(int value) {
     }
 }
 
+/**
+ * A clause in a SAT problem.
+ *
+ * @param literals the literals of this clause
+ */
 record Clause(List<Literal> literals) {
     static Clause of(final Literal... literals) {
         return new Clause(List.of(literals));
@@ -51,6 +55,11 @@ record Clause(List<Literal> literals) {
     }
 }
 
+/**
+ * A SAT problem.
+ *
+ * @param clauses the clauses of this problem
+ */
 record Problem(List<Clause> clauses) {
     static Problem of(final Clause... clauses) {
         return new Problem(List.of(clauses));
@@ -68,7 +77,7 @@ record Problem(List<Clause> clauses) {
         return new Problem(clauses.subList(1, clauses.size()));
     }
 
-    Problem prependedWith(Clause clause) {
+    Problem prependedWith(final Clause clause) {
         final var newClauses = new ArrayList<Clause>(clauses.size() + 1);
         newClauses.add(clause);
         newClauses.addAll(clauses);
@@ -76,6 +85,11 @@ record Problem(List<Clause> clauses) {
     }
 }
 
+/**
+ * An assignment of literals to a SAT problem.
+ *
+ * @param literals the literals of this assignment
+ */
 record Assignment(List<Literal> literals) {
     static final Assignment EMPTY = new Assignment(List.of());
     Assignment prependedWith(final Literal literal) {
@@ -86,6 +100,9 @@ record Assignment(List<Literal> literals) {
     }
 }
 
+/**
+ * A function that propagates a literal in a SAT problem, to simplify the problem.
+ */
 interface Propagate extends BiFunction<Literal, Problem, Problem> {
     Propagate DEFAULT = new Propagate() {};
 
@@ -99,6 +116,9 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
     }
 }
 
+/**
+ * A function that solves a SAT problem.
+ */
 interface Solve extends Function<Problem, Stream<Assignment>> {
     Solve DEFAULT = new Solve() {};
 
@@ -126,6 +146,9 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
     }
 }
 
+/**
+ * Playground for the SAT solver.
+ */
 void main() {
     final var example = Problem.of(
             Clause.of(new Literal(1), new Literal(2)),
