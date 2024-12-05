@@ -4,21 +4,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-/**
- * Deconstruction of a list into head and tail.
- *
- * @param <T> the type of the list elements
- */
-sealed interface Deconstruction<T> {
-    record HeadTail<T>(T head, List<T> tail) implements Deconstruction<T> {}
-    record Empty<T>() implements Deconstruction<T> {}
-    static <T> Deconstruction<T> from(final List<T> list) {
-        if (list.isEmpty()) {
-            return new Empty<>();
-        }
-        return new HeadTail<>(list.getFirst(), list.subList(1, list.size()));
-    }
-}
 
 /**
  * A literal in a SAT problem.
