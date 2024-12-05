@@ -1,8 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Deconstruction of a list into head and tail.
@@ -31,6 +31,7 @@ record Literal(int value) {
             throw new IllegalArgumentException("Literal value must not be 0");
         }
     }
+
     Literal negated() {
         return new Literal(-value);
     }
@@ -40,11 +41,24 @@ record Clause(List<Literal> literals) {
     static Clause of(final Literal... literals) {
         return new Clause(List.of(literals));
     }
+
     boolean contains(final Literal literal) {
         return literals.contains(literal);
     }
+
     boolean isEmpty() {
         return literals.isEmpty();
+    }
+
+    Clause without(final Literal literal) {
+        final List<Literal> filteredLiterals = literals.stream()
+                .filter(l -> l.value() != literal.value())
+                .toList();
+        return new Clause(filteredLiterals);
+    }
+
+    Clause tail() {
+        return new Clause(literals.subList(1, literals.size()));
     }
 }
 
@@ -52,13 +66,31 @@ record Problem(List<Clause> clauses) {
     static Problem of(final Clause... clauses) {
         return new Problem(List.of(clauses));
     }
+
     boolean isEmpty() {
         return clauses.isEmpty();
+    }
+
+    Problem tail() {
+        return new Problem(clauses.subList(1, clauses.size()));
+    }
+
+    Problem prependedWith(Clause clause) {
+        final var newClauses = new ArrayList<Clause>(clauses.size() + 1);
+        newClauses.add(clause);
+        newClauses.addAll(clauses);
+        return new Problem(newClauses);
     }
 }
 
 record Assignment(List<Literal> literals) {
     static final Assignment EMPTY = new Assignment(List.of());
+    Assignment prependedWith(final Literal literal) {
+        final var newLiterals = new ArrayList<Literal>(literals.size() + 1);
+        newLiterals.add(literal);
+        newLiterals.addAll(literals);
+        return new Assignment(newLiterals);
+    }
 }
 
 interface Propagate extends BiFunction<Literal, Problem, Problem> {
@@ -68,50 +100,38 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
     default Problem apply(final Literal literal, final Problem problem) {
         final List<Clause> clausesAfterPropagation = problem.clauses().stream()
                 .filter(clause -> !clause.contains(literal))
-                .map(clause -> new Clause(clause.literals().stream().filter(l -> l.value() != -literal.value()).toList()))
+                .map(clause -> clause.without(literal.negated()))
                 .toList();
         return new Problem(clausesAfterPropagation);
     }
 }
 
-interface Solve extends Function<Problem, Optional<Assignment>> {
+interface Solve extends Function<Problem, List<Assignment>> {
     Solve DEFAULT = new Solve() {};
 
     @Override
-    default Optional<Assignment> apply(final Problem problem) {
+    default List<Assignment> apply(final Problem problem) {
         if (problem.isEmpty()) {
-            return Optional.of(Assignment.EMPTY);
+            return List.of(Assignment.EMPTY);
         }
 
         final Clause headClause = problem.clauses().getFirst();
         if (headClause.isEmpty()) {
-            return Optional.empty();
+            return List.of();
         }
 
         final Literal headLiteral = headClause.literals().getFirst();
         final Problem problemAfterPropagation = Propagate.DEFAULT.apply(headLiteral, problem);
-        final Optional<Assignment> assignment = apply(problemAfterPropagation);
-        if (assignment.isPresent()) {
-            final var literals = new ArrayList<Literal>();
-            literals.add(headLiteral);
-            literals.addAll(assignment.get().literals());
-            return Optional.of(new Assignment(literals));
-        }
 
-        final Clause firstClause = problem.clauses().getFirst();
-        final Clause firstClauseWithoutFirstLiteral = new Clause(firstClause.literals().subList(1, firstClause.literals().size()));
-        final List<Clause> clausesWithoutFirstClauseFirstLiteral = new ArrayList<>(problem.clauses().subList(1, problem.clauses().size()));
-        clausesWithoutFirstClauseFirstLiteral.addFirst(firstClauseWithoutFirstLiteral);
-        final Problem problemWithoutFirstLiteral = new Problem(clausesWithoutFirstClauseFirstLiteral);
-        final Problem problemAfterNegation = Propagate.DEFAULT.apply(headLiteral.negated(), problemWithoutFirstLiteral);
-        final Optional<Assignment> assignmentAfterNegation = apply(problemAfterNegation);
-        if (assignmentAfterNegation.isEmpty()) {
-            return Optional.empty();
-        }
-        final var literals = new ArrayList<Literal>();
-        literals.add(headLiteral.negated());
-        literals.addAll(assignmentAfterNegation.get().literals());
-        return Optional.of(new Assignment(literals));
+        final Stream<Assignment> assignments = apply(problemAfterPropagation).stream()
+                .map(a -> a.prependedWith(headLiteral));
+
+        final Problem problemWithoutFirstLiteral = problem.tail().prependedWith(headClause.tail());
+        final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(headLiteral.negated(), problemWithoutFirstLiteral);
+        final Stream<Assignment> assignmentsAfterNegation = apply(problemAfterPropagatingNegation).stream()
+                .map(a -> a.prependedWith(headLiteral.negated()));
+
+        return Stream.concat(assignments, assignmentsAfterNegation).toList();
     }
 }
 
@@ -120,8 +140,5 @@ void main() {
             Clause.of(new Literal(1), new Literal(2)),
             Clause.of(new Literal(-2), new Literal(3))
     );
-    Solve.DEFAULT.apply(example).ifPresentOrElse(
-            assignment -> System.out.println("SAT: " + assignment),
-            () -> System.out.println("UNSAT")
-    );
+    Solve.DEFAULT.apply(example).forEach(System.out::println);
 }
