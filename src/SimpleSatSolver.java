@@ -57,6 +57,10 @@ record Clause(List<Literal> literals) {
         return new Clause(filteredLiterals);
     }
 
+    Literal head() {
+        return literals.getFirst();
+    }
+
     Clause tail() {
         return new Clause(literals.subList(1, literals.size()));
     }
@@ -69,6 +73,10 @@ record Problem(List<Clause> clauses) {
 
     boolean isEmpty() {
         return clauses.isEmpty();
+    }
+
+    Clause head() {
+        return clauses.getFirst();
     }
 
     Problem tail() {
@@ -106,32 +114,30 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
     }
 }
 
-interface Solve extends Function<Problem, List<Assignment>> {
+interface Solve extends Function<Problem, Stream<Assignment>> {
     Solve DEFAULT = new Solve() {};
 
     @Override
-    default List<Assignment> apply(final Problem problem) {
+    default Stream<Assignment> apply(final Problem problem) {
         if (problem.isEmpty()) {
-            return List.of(Assignment.EMPTY);
+            return Stream.of(Assignment.EMPTY);
         }
 
-        final Clause headClause = problem.clauses().getFirst();
+        final Clause headClause = problem.head();
         if (headClause.isEmpty()) {
-            return List.of();
+            return Stream.of();
         }
 
-        final Literal headLiteral = headClause.literals().getFirst();
-        final Problem problemAfterPropagation = Propagate.DEFAULT.apply(headLiteral, problem);
+        final Literal literal = headClause.head();
+        final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem);
+        final Stream<Assignment> assignments = apply(problemAfterPropagation).map(a -> a.prependedWith(literal));
 
-        final Stream<Assignment> assignments = apply(problemAfterPropagation).stream()
-                .map(a -> a.prependedWith(headLiteral));
+        final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(literal.negated(),
+                problem.tail().prependedWith(headClause.tail()));
+        final Stream<Assignment> assignmentsAfterNegation = apply(problemAfterPropagatingNegation)
+                .map(a -> a.prependedWith(literal.negated()));
 
-        final Problem problemWithoutFirstLiteral = problem.tail().prependedWith(headClause.tail());
-        final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(headLiteral.negated(), problemWithoutFirstLiteral);
-        final Stream<Assignment> assignmentsAfterNegation = apply(problemAfterPropagatingNegation).stream()
-                .map(a -> a.prependedWith(headLiteral.negated()));
-
-        return Stream.concat(assignments, assignmentsAfterNegation).toList();
+        return Stream.concat(assignments, assignmentsAfterNegation);
     }
 }
 
