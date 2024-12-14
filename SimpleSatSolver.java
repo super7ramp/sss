@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -135,14 +136,19 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
 
         final Literal literal = headClause.head();
         final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem);
-        final Stream<Assignment> assignments = apply(problemAfterPropagation).map(a -> a.prependedWith(literal));
+        final Stream<Assignment> assignments = lazily(() ->
+                apply(problemAfterPropagation).map(a -> a.prependedWith(literal)));
 
         final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(literal.negated(),
                 problem.tail().prependedWith(headClause.tail()));
-        final Stream<Assignment> assignmentsAfterNegation = apply(problemAfterPropagatingNegation)
-                .map(a -> a.prependedWith(literal.negated()));
+        final Stream<Assignment> assignmentsAfterNegation = lazily(() ->
+                apply(problemAfterPropagatingNegation).map(a -> a.prependedWith(literal.negated())));
 
         return Stream.concat(assignments, assignmentsAfterNegation);
+    }
+
+    private static <T> Stream<T> lazily(final Supplier<Stream<T>> supplier) {
+        return Stream.of(1).flatMap(i -> supplier.get());
     }
 }
 
