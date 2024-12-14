@@ -137,7 +137,7 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
         final Literal literal = headClause.head();
 
         final Stream<Assignment> assignments = lazily(() -> {
-            final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem);
+            final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem.tail());
             return apply(problemAfterPropagation);
         }).map(a -> a.prependedWith(literal));
 
