@@ -135,14 +135,16 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
         }
 
         final Literal literal = headClause.head();
-        final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem);
-        final Stream<Assignment> assignments = lazily(() ->
-                apply(problemAfterPropagation).map(a -> a.prependedWith(literal)));
 
-        final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(literal.negated(),
-                problem.tail().prependedWith(headClause.tail()));
-        final Stream<Assignment> assignmentsAfterNegation = lazily(() ->
-                apply(problemAfterPropagatingNegation).map(a -> a.prependedWith(literal.negated())));
+        final Stream<Assignment> assignments = lazily(() -> {
+            final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem);
+            return apply(problemAfterPropagation);
+        }).map(a -> a.prependedWith(literal));
+
+        final Stream<Assignment> assignmentsAfterNegation = lazily(() -> {
+            final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(literal.negated(), problem.tail().prependedWith(headClause.tail()));
+            return apply(problemAfterPropagatingNegation);
+        }).map(a -> a.prependedWith(literal.negated()));
 
         return Stream.concat(assignments, assignmentsAfterNegation);
     }
