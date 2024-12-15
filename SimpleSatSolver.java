@@ -6,6 +6,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static java.util.Comparator.comparingInt;
+
 /**
  * A literal in a SAT problem.
  *
@@ -39,6 +41,10 @@ record Clause(List<Literal> literals) {
 
     boolean isEmpty() {
         return literals.isEmpty();
+    }
+
+    int size() {
+        return literals.size();
     }
 
     Clause without(final Literal literal) {
@@ -111,12 +117,11 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
 
     @Override
     default Problem apply(final Literal literal, final Problem problem) {
-        //System.out.println("Propagating " + literal + " in " + problem.clauses());
         final List<Clause> clausesAfterPropagation = problem.clauses().stream()
                 .filter(clause -> !clause.contains(literal))
                 .map(clause -> clause.without(literal.negated()))
+                .sorted(comparingInt(Clause::size))
                 .toList();
-        //System.out.println("Result: " + clausesAfterPropagation);
         return new Problem(clausesAfterPropagation);
     }
 }
@@ -141,16 +146,20 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
         final Literal literal = headClause.head();
 
         final Stream<Assignment> assignments = lazily(() -> {
-            final Problem problemAfterPropagation = Propagate.DEFAULT.apply(literal, problem.tail());
+            final Problem problemAfterPropagation = propagate(literal, problem.tail());
             return apply(problemAfterPropagation);
         }).map(a -> a.prependedWith(literal));
 
         final Stream<Assignment> assignmentsAfterNegation = lazily(() -> {
-            final Problem problemAfterPropagatingNegation = Propagate.DEFAULT.apply(literal.negated(), problem.tail().prependedWith(headClause.tail()));
+            final Problem problemAfterPropagatingNegation = propagate(literal.negated(), problem.tail().prependedWith(headClause.tail()));
             return apply(problemAfterPropagatingNegation);
         }).map(a -> a.prependedWith(literal.negated()));
 
         return Stream.concat(assignments, assignmentsAfterNegation);
+    }
+
+    private Problem propagate(final Literal literal, Problem problem) {
+        return Propagate.DEFAULT.apply(literal, problem);
     }
 
     private static <T> Stream<T> lazily(final Supplier<Stream<T>> supplier) {
@@ -189,13 +198,13 @@ static class Clauses {
  */
 static class Sudoku {
 
+    private final int[][] grid;
     private final Problem problem;
 
     Sudoku(final int[][] initialGrid) {
         final var clauses = new ArrayList<Clause>();
 
         // 1. No row contains dupe
-        /*
         for (int row = 0; row < 9; row++) {
             for (int value = 0; value < 9; value++) {
                 final var literals = new Literal[9];
@@ -205,10 +214,9 @@ static class Sudoku {
                 }
                 clauses.addAll(Clauses.exactlyOne(literals));
             }
-        }*/
+        }
 
         // 2. No column contains dupe
-        /*
         for (int column = 0; column < 9; column++) {
             for (int value = 0; value < 9; value++) {
                 final var literals = new Literal[9];
@@ -218,10 +226,9 @@ static class Sudoku {
                 }
                 clauses.addAll(Clauses.exactlyOne(literals));
             }
-        }*/
+        }
 
         // 3. No 3x3 box contains dupe
-        /*
         for (int startRow = 0; startRow < 9; startRow += 3) {
             for (int startColumn = 0; startColumn < 9; startColumn += 3) {
                 for (int value = 0; value < 9; value++) {
@@ -235,10 +242,9 @@ static class Sudoku {
                     clauses.addAll(Clauses.exactlyOne(literals));
                 }
             }
-        }*/
+        }
 
         // 4. No cell contains dupe
-        /*
         for (int row = 0; row < 9; row++) {
             for (int column = 0; column < 9; column++) {
                 final var literals = new Literal[9];
@@ -248,7 +254,7 @@ static class Sudoku {
                 }
                 clauses.addAll(Clauses.exactlyOne(literals));
             }
-        }*/
+        }
 
         // 5. Initial values
         for (int row = 0; row < 9; row++) {
@@ -260,7 +266,9 @@ static class Sudoku {
                 }
             }
         }
+
         problem = new Problem(clauses);
+        grid = initialGrid;
     }
 
     private static int variableFrom(final int row, final int column, final int value) {
@@ -293,6 +301,11 @@ static class Sudoku {
         }
         return grid;
     }
+
+    @Override
+    public String toString() {
+        return Arrays.deepToString(grid).replace("],", "\n");
+    }
 }
 
 /**
@@ -300,37 +313,33 @@ static class Sudoku {
  */
 void main() {
 
-    System.out.println("Trivial example");
+    System.out.println("Example: Trivial clauses");
+    System.out.println("Input: (1 or 2) and (-2 or 3)");
     final var example = Problem.of(
             Clause.of(new Literal(1), new Literal(2)),
             Clause.of(new Literal(-2), new Literal(3))
     );
+    System.out.println("Solutions:");
     Solve.DEFAULT.apply(example).forEach(System.out::println);
 
-    System.out.println("Sudoku");
-    final var sudoku = new Sudoku(new int[][]{
-            // impossible
-            {2, 2, 6, 1, 3, 5, 8, 4, 9}, // 2 is duplicated
-            {8, 3, 5, 2, 4, 9, 1, 7, 6},
-            {1, 4, 9, 7, 8, 6, 2, 3, 5},
-            {5, 6, 3, 4, 1, 2, 7, 9, 8},
-            {4, 1, 2, 9, 7, 8, 5, 6, 3},
-            {7, 9, 8, 5, 6, 3, 4, 1, 2},
-            {6, 5, 4, 3, 2, 1, 9, 8, 7},
-            {3, 2, 1, 8, 9, 7, 6, 5, 4},
-            {9, 8, 7, 6, 5, 4, 3, 2, 1},
+    System.out.println();
 
-            // simple, only cell to fill
-            //{2, 7, 6, 1, 3, 5, 8, 4, 9},
-            //{8, 3, 5, 2, 4, 9, 1, 7, 6},
-            //{1, 4, 9, 7, 8, 6, 2, 3, 5},
-            //{5, 6, 3, 4, 1, 2, 7, 9, 8},
-            //{4, 1, 2, 9, 7, 8, 5, 6, 3},
-            //{7, 9, 8, 5, 6, 3, 4, 1, 2},
-            //{6, 5, 4, 3, 2, 1, 9, 8, 7},
-            //{3, 2, 1, 8, 9, 7, 6, 5, 4},
-            //{9, 8, 7, 6, 5, 4, 3, 2, 1}
-    });
-    sudoku.solutions().parallel().map(Arrays::deepToString).findAny().ifPresent(System.out::println);
+    System.out.println("Example: A sudoku problem");
+    final var sudoku = new Sudoku(new int[][]{
+            {0, 2, 6, 0, 0, 0, 8, 1, 0},
+            {3, 0, 0, 7, 0, 8, 0, 0, 6},
+            {4, 0, 0, 0, 5, 0, 0, 0, 7},
+            {0, 5, 0, 1, 0, 7, 0, 9, 0},
+            {0, 0, 3, 9, 0, 5, 1, 0, 0},
+            {0, 4, 0, 3, 0, 2, 0, 5, 0},
+            {1, 0, 0, 0, 3, 0, 0, 0, 2},
+            {5, 0, 0, 2, 0, 4, 0, 0, 9},
+            {0, 3, 8, 0, 0, 0, 4, 6, 0}});
+    System.out.println("Input:");
+    System.out.println(sudoku);
+    System.out.println("Solutions:");
+    sudoku.solutions()
+            .map(s -> Arrays.deepToString(s).replace("],", "\n"))
+            .forEach(System.out::println);
 
 }
