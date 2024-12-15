@@ -60,7 +60,6 @@ record Clause(List<Literal> literals) {
     Literal head() {
         return literals.getFirst();
     }
-
 }
 
 /**
@@ -80,7 +79,6 @@ record Problem(List<Clause> clauses) {
     Clause head() {
         return clauses.getFirst();
     }
-
 }
 
 /**
@@ -135,25 +133,23 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
 
         final Literal literal = headClause.head();
 
-        final Stream<Assignment> assignments = lazily(() -> {
-            final Problem problemAfterPropagation = propagate(literal, problem);
-            return apply(problemAfterPropagation);
-        }).map(a -> a.prependedWith(literal));
+        final Stream<Assignment> assignmentsWithLiteral = lazily(() -> propagate(literal, problem))
+                .flatMap(this)
+                .map(assignment -> assignment.prependedWith(literal));
 
-        final Stream<Assignment> assignmentsAfterNegation = lazily(() -> {
-            final Problem problemAfterPropagatingNegation = propagate(literal.negated(), problem);
-            return apply(problemAfterPropagatingNegation);
-        }).map(a -> a.prependedWith(literal.negated()));
+        final Stream<Assignment> assignmentsWithLiteralNegated = lazily(() -> propagate(literal.negated(), problem))
+                .flatMap(this)
+                .map(assignment -> assignment.prependedWith(literal.negated()));
 
-        return Stream.concat(assignments, assignmentsAfterNegation);
+        return Stream.concat(assignmentsWithLiteral, assignmentsWithLiteralNegated);
+    }
+
+    private static <T> Stream<T> lazily(final Supplier<T> supplier) {
+        return Stream.of(1).flatMap(i -> Stream.of(supplier.get()));
     }
 
     private Problem propagate(final Literal literal, Problem problem) {
         return Propagate.DEFAULT.apply(literal, problem);
-    }
-
-    private static <T> Stream<T> lazily(final Supplier<Stream<T>> supplier) {
-        return Stream.of(1).flatMap(i -> supplier.get());
     }
 }
 
