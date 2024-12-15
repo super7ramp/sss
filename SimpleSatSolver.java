@@ -48,6 +48,9 @@ record Clause(List<Literal> literals) {
     }
 
     Clause without(final Literal literal) {
+        if (!literals.contains(literal)) {
+            return this;
+        }
         final List<Literal> filteredLiterals = literals.stream()
                 .filter(l -> l.value() != literal.value())
                 .toList();
