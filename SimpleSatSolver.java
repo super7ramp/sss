@@ -61,9 +61,6 @@ record Clause(List<Literal> literals) {
         return literals.getFirst();
     }
 
-    Clause tail() {
-        return new Clause(literals.subList(1, literals.size()));
-    }
 }
 
 /**
@@ -84,16 +81,6 @@ record Problem(List<Clause> clauses) {
         return clauses.getFirst();
     }
 
-    Problem tail() {
-        return new Problem(clauses.subList(1, clauses.size()));
-    }
-
-    Problem prependedWith(final Clause clause) {
-        final var newClauses = new ArrayList<Clause>(clauses.size() + 1);
-        newClauses.add(clause);
-        newClauses.addAll(clauses);
-        return new Problem(newClauses);
-    }
 }
 
 /**
@@ -149,12 +136,12 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
         final Literal literal = headClause.head();
 
         final Stream<Assignment> assignments = lazily(() -> {
-            final Problem problemAfterPropagation = propagate(literal, problem.tail());
+            final Problem problemAfterPropagation = propagate(literal, problem);
             return apply(problemAfterPropagation);
         }).map(a -> a.prependedWith(literal));
 
         final Stream<Assignment> assignmentsAfterNegation = lazily(() -> {
-            final Problem problemAfterPropagatingNegation = propagate(literal.negated(), problem.tail().prependedWith(headClause.tail()));
+            final Problem problemAfterPropagatingNegation = propagate(literal.negated(), problem);
             return apply(problemAfterPropagatingNegation);
         }).map(a -> a.prependedWith(literal.negated()));
 
@@ -341,8 +328,10 @@ void main() {
     System.out.println("Input:");
     System.out.println(sudoku);
     System.out.println("Solutions:");
+    long before = System.currentTimeMillis();
     sudoku.solutions()
             .map(s -> Arrays.deepToString(s).replace("],", "\n"))
             .forEach(System.out::println);
-
+    long after = System.currentTimeMillis();
+    System.out.println("Time: " + (after - before) + " ms");
 }
