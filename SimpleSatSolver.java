@@ -31,6 +31,9 @@ record Literal(int value) {
  * @param literals the literals of this clause
  */
 record Clause(List<Literal> literals) {
+
+    static Clause EMPTY = new Clause(List.of());
+
     static Clause of(final Literal... literals) {
         return new Clause(List.of(literals));
     }
@@ -68,6 +71,8 @@ record Clause(List<Literal> literals) {
  * @param clauses the clauses of this problem
  */
 record Problem(List<Clause> clauses) {
+    static Problem UNSATISFIABLE = new Problem(List.of(Clause.EMPTY));
+
     static Problem of(final Clause... clauses) {
         return new Problem(List.of(clauses));
     }
@@ -105,11 +110,19 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
 
     @Override
     default Problem apply(final Literal literal, final Problem problem) {
-        final List<Clause> clausesAfterPropagation = problem.clauses().stream()
-                .filter(clause -> !clause.contains(literal))
-                .map(clause -> clause.without(literal.negated()))
-                .sorted(comparingInt(Clause::size))
-                .toList();
+        final var clausesAfterPropagation = new ArrayList<Clause>();
+        for (final Clause clause : problem.clauses()) {
+            if (clause.contains(literal)) {
+                continue;
+            }
+            final Clause clauseWithoutLiteralNegated = clause.without(literal.negated());
+            if (clauseWithoutLiteralNegated.isEmpty()) {
+                // No need to continue propagating this literal
+                return Problem.UNSATISFIABLE;
+            }
+            clausesAfterPropagation.add(clauseWithoutLiteralNegated);
+        }
+        clausesAfterPropagation.sort(comparingInt(Clause::size));
         return new Problem(clausesAfterPropagation);
     }
 }
