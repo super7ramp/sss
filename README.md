@@ -9,5 +9,5 @@ This is a [very small SAT solver][] written in Java.
 Using Java 21:
 
 ```shell
-java --enable-preview --source 21 SimpleSatSolver.java
+java -Xss4m --enable-preview --source 21 SimpleSatSolver.java
 ```
