@@ -6,8 +6,6 @@ This is a [very small SAT solver][] written in Java.
 
 ## Run examples
 
-Using Java 21:
-
 ```shell
-java --enable-preview --source 21 SimpleSatSolver.java
+java SimpleSatSolver.java
 ```
