@@ -8,11 +8,11 @@ written in several programming languages for educational purposes.
 ### Clojure
 
 ```shell
-cd clojure && clj -m sss
+cd clojure && clojure -m sss
 ```
 
 ### Java
 
 ```shell
-java java/SimpleSatSolver.java
+java java/Sss.java
 ```
