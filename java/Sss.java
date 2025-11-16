@@ -108,9 +108,20 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
         final List<Clause> clausesAfterPropagation = problem.clauses().stream()
                 .filter(clause -> !clause.contains(literal))
                 .map(clause -> clause.without(literal.negated()))
+                .gather(haltWhen(Clause::isEmpty))
                 .sorted(comparingInt(Clause::size))
                 .toList();
         return new Problem(clausesAfterPropagation);
+    }
+
+    static <T> Gatherer<T, Void, T> haltWhen(final Predicate<T> predicate) {
+        return Gatherer.of((_, element, downstream) -> {
+            if (predicate.test(element)) {
+                downstream.push(element);
+                return false;
+            }
+            return downstream.push(element);
+        });
     }
 }
 

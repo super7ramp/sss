@@ -6,7 +6,8 @@
   [literal problem]
   (->> problem
        (into [] (comp (remove (fn [clause] (some #(== literal %) clause)))
-                      (map (fn [clause] (remove #(== (- literal) %) clause)))))
+                      (map (fn [clause] (remove #(== (- literal) %) clause)))
+                      (halt-when empty? (fn [_ empty-clause] [empty-clause]))))
        (sort-by count)))
 
 (defn solve
