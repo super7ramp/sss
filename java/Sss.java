@@ -1,18 +1,8 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import static java.util.Comparator.comparingInt;
 
-/**
- * A literal in a SAT problem.
- *
- * @param value the value of the literal - cannot be 0
- */
+/// A literal in a SAT problem.
+///
+/// @param value the value of the literal - cannot be 0
 record Literal(int value) {
     Literal {
         if (value == 0) {
@@ -25,11 +15,9 @@ record Literal(int value) {
     }
 }
 
-/**
- * A clause in a SAT problem.
- *
- * @param literals the literals of this clause
- */
+/// A clause in a SAT problem.
+///
+/// @param literals the literals of this clause
 record Clause(List<Literal> literals) {
     static Clause of(final Literal... literals) {
         return new Clause(List.of(literals));
@@ -62,11 +50,9 @@ record Clause(List<Literal> literals) {
     }
 }
 
-/**
- * A SAT problem.
- *
- * @param clauses the clauses of this problem
- */
+/// A SAT problem.
+///
+/// @param clauses the clauses of this problem
 record Problem(List<Clause> clauses) {
     static Problem of(final Clause... clauses) {
         return new Problem(List.of(clauses));
@@ -81,11 +67,9 @@ record Problem(List<Clause> clauses) {
     }
 }
 
-/**
- * An assignment of literals to a SAT problem.
- *
- * @param literals the literals of this assignment
- */
+/// An assignment of literals to a SAT problem.
+///
+/// @param literals the literals of this assignment
 record Assignment(List<Literal> literals) {
     static final Assignment EMPTY = new Assignment(List.of());
 
@@ -97,9 +81,7 @@ record Assignment(List<Literal> literals) {
     }
 }
 
-/**
- * A function that propagates a literal in a SAT problem, to simplify the problem.
- */
+/// A function that propagates a literal in a SAT problem, to simplify the problem.
 interface Propagate extends BiFunction<Literal, Problem, Problem> {
     Propagate DEFAULT = new Propagate() {};
 
@@ -125,9 +107,7 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
     }
 }
 
-/**
- * A function that solves a SAT problem.
- */
+/// A function that solves a SAT problem.
 interface Solve extends Function<Problem, Stream<Assignment>> {
     Solve DEFAULT = new Solve() {};
 
@@ -164,9 +144,7 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
     }
 }
 
-/**
- * Utility class for creating clauses.
- */
+/// Utility class for creating clauses.
 static class Clauses {
 
     private Clauses() {
@@ -190,9 +168,7 @@ static class Clauses {
     }
 }
 
-/**
- * A sudoku problem.
- */
+/// A sudoku problem.
 static class Sudoku {
 
     private final int[][] grid;
@@ -305,23 +281,21 @@ static class Sudoku {
     }
 }
 
-/**
- * Playground for the SAT solver.
- */
+/// Playground for the SAT solver.
 void main() {
 
-    System.out.println("Example: Trivial clauses");
-    System.out.println("Input: (1 or 2) and (-2 or 3)");
+    IO.println("Example: Trivial clauses");
+    IO.println("Input: (1 or 2) and (-2 or 3)");
     final var example = Problem.of(
             Clause.of(new Literal(1), new Literal(2)),
             Clause.of(new Literal(-2), new Literal(3))
     );
-    System.out.println("Solutions:");
+    IO.println("Solutions:");
     Solve.DEFAULT.apply(example).forEach(System.out::println);
 
-    System.out.println();
+    IO.println();
 
-    System.out.println("Example: A sudoku problem");
+    IO.println("Example: A sudoku problem");
     final var sudoku = new Sudoku(new int[][]{
             {0, 2, 6, 0, 0, 0, 8, 1, 0},
             {3, 0, 0, 7, 0, 8, 0, 0, 6},
@@ -332,13 +306,13 @@ void main() {
             {1, 0, 0, 0, 3, 0, 0, 0, 2},
             {5, 0, 0, 2, 0, 4, 0, 0, 9},
             {0, 3, 8, 0, 0, 0, 4, 6, 0}});
-    System.out.println("Input:");
-    System.out.println(sudoku);
-    System.out.println("Solutions:");
+    IO.println("Input:");
+    IO.println(sudoku);
+    IO.println("Solutions:");
     long before = System.currentTimeMillis();
     sudoku.solutions()
             .map(s -> Arrays.deepToString(s).replace("],", "\n"))
-            .forEach(System.out::println);
+            .forEach(IO::println);
     long after = System.currentTimeMillis();
-    System.out.println("Time: " + (after - before) + " ms");
+    IO.println("Time: " + (after - before) + " ms");
 }
