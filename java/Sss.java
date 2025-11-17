@@ -291,7 +291,7 @@ void main() {
             Clause.of(new Literal(-2), new Literal(3))
     );
     IO.println("Solutions:");
-    Solve.DEFAULT.apply(example).forEach(System.out::println);
+    Solve.DEFAULT.apply(example).forEach(IO::println);
 
     IO.println();
 
