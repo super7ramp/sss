@@ -40,31 +40,32 @@
 
 (defn- sudoku-grid->clauses [grid]
   (let [rows (range 9), cols (range 9), digits (range 1 10)]
-    (concat
-      ; 1. No row contains dupe
-      (mapcat exactly-one (for [row rows, digit digits]
-                            (for [col cols]
-                              (sudoku-var-num row col digit))))
-      ; 2. No column contains dupe
-      (mapcat exactly-one (for [col cols, digit digits]
-                            (for [row rows]
-                              (sudoku-var-num row col digit))))
-      ; 3. No 3x3 box contains dupe
-      (mapcat exactly-one (for [box-row (range 3), box-col (range 3), digit digits]
-                            (for [i (range 3), j (range 3)]
-                              (sudoku-var-num (+ (* box-row 3) i)
-                                              (+ (* box-col 3) j)
-                                              digit))))
-      ; 4. No cell contains dupe
-      (mapcat exactly-one (for [row rows, col cols]
-                            (for [digit digits]
-                              (sudoku-var-num row col digit))))
-      ; 5. Initial values
-      (for [row rows
-            col cols
-            :let [digit (nth (nth grid row) col)]
-            :when (pos? digit)]
-        [(sudoku-var-num row col digit)]))))
+    (distinct
+      (concat
+        ; 1. No row contains dupe
+        (mapcat exactly-one (for [row rows, digit digits]
+                              (for [col cols]
+                                (sudoku-var-num row col digit))))
+        ; 2. No column contains dupe
+        (mapcat exactly-one (for [col cols, digit digits]
+                              (for [row rows]
+                                (sudoku-var-num row col digit))))
+        ; 3. No 3x3 box contains dupe
+        (mapcat exactly-one (for [box-row (range 3), box-col (range 3), digit digits]
+                              (for [i (range 3), j (range 3)]
+                                (sudoku-var-num (+ (* box-row 3) i)
+                                                (+ (* box-col 3) j)
+                                                digit))))
+        ; 4. No cell contains dupe
+        (mapcat exactly-one (for [row rows, col cols]
+                              (for [digit digits]
+                                (sudoku-var-num row col digit))))
+        ; 5. Initial values
+        (for [row rows
+              col cols
+              :let [digit (nth (nth grid row) col)]
+              :when (pos? digit)]
+          [(sudoku-var-num row col digit)])))))
 
 (defn- assignment->sudoku-grid [assignment]
   (when (not-empty assignment)

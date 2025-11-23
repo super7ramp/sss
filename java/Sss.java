@@ -18,7 +18,7 @@ record Literal(int value) {
 /// A clause in a SAT problem.
 ///
 /// @param literals the literals of this clause
-record Clause(List<Literal> literals) {
+record Clause(SequencedCollection<Literal> literals) {
     static Clause of(final Literal... literals) {
         return new Clause(List.of(literals));
     }
@@ -53,7 +53,7 @@ record Clause(List<Literal> literals) {
 /// A SAT problem.
 ///
 /// @param clauses the clauses of this problem
-record Problem(List<Clause> clauses) {
+record Problem(SequencedCollection<Clause> clauses) {
     static Problem of(final Clause... clauses) {
         return new Problem(List.of(clauses));
     }
@@ -175,7 +175,7 @@ static class Sudoku {
     private final Problem problem;
 
     Sudoku(final int[][] initialGrid) {
-        final var clauses = new ArrayList<Clause>();
+        final var clauses = new LinkedHashSet<Clause>();
 
         // 1. No row contains dupe
         for (int row = 0; row < 9; row++) {
