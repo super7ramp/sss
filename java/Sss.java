@@ -84,19 +84,22 @@ record Assignment(List<Literal> literals) {
 /// A function that propagates a literal in a SAT problem, to simplify the problem.
 interface Propagate extends BiFunction<Literal, Problem, Problem> {
     Propagate DEFAULT = new Propagate() {};
+    Gatherer<Clause, Void, Clause> HALT_WHEN_CLAUSE_EMPTY = haltWhen(Clause::isEmpty);
+    Comparator<Clause> COMPARING_BY_CLAUSE_SIZE = comparingInt(Clause::size);
 
     @Override
     default Problem apply(final Literal literal, final Problem problem) {
+        final Literal negatedLiteral = literal.negated();
         final List<Clause> clausesAfterPropagation = problem.clauses().stream()
                 .filter(clause -> !clause.contains(literal))
-                .map(clause -> clause.without(literal.negated()))
-                .gather(haltWhen(Clause::isEmpty))
-                .sorted(comparingInt(Clause::size))
+                .map(clause -> clause.without(negatedLiteral))
+                .gather(HALT_WHEN_CLAUSE_EMPTY)
+                .sorted(COMPARING_BY_CLAUSE_SIZE)
                 .toList();
         return new Problem(clausesAfterPropagation);
     }
 
-    static <T> Gatherer<T, Void, T> haltWhen(final Predicate<T> predicate) {
+    private static <T> Gatherer<T, Void, T> haltWhen(final Predicate<T> predicate) {
         return Gatherer.of((_, element, downstream) -> {
             if (predicate.test(element)) {
                 downstream.push(element);
