@@ -159,7 +159,7 @@ static class ExplicitStackSolver implements Solve {
         return Stream.of(problem).gather(solutions());
     }
 
-    private Gatherer<Problem, ArrayDeque<Frame>, Assignment> solutions() {
+    private Gatherer<Problem, Deque<Frame>, Assignment> solutions() {
         return Gatherer.ofSequential(ArrayDeque::new, (stack, root, downstream) -> {
             stack.push(new Frame(root, Assignment.EMPTY));
 
