@@ -83,7 +83,8 @@ record Assignment(List<Literal> literals) {
 
 /// A function that propagates a literal in a SAT problem, to simplify the problem.
 interface Propagate extends BiFunction<Literal, Problem, Problem> {
-    Propagate DEFAULT = new Propagate() {};
+    Propagate DEFAULT = new Propagate() {
+    };
     Gatherer<Clause, Void, Clause> HALT_WHEN_CLAUSE_EMPTY = haltWhen(Clause::isEmpty);
     Comparator<Clause> COMPARING_BY_CLAUSE_SIZE = comparingInt(Clause::size);
 
@@ -112,7 +113,8 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
 
 /// A function that solves a SAT problem.
 interface Solve extends Function<Problem, Stream<Assignment>> {
-    Solve DEFAULT = new Solve() {};
+    Solve DEFAULT = new Solve() {
+    };
 
     @Override
     default Stream<Assignment> apply(final Problem problem) {
@@ -152,7 +154,8 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
 /// Prevents stack overflow for large problems.
 static class ExplicitStackSolver implements Solve {
 
-    private record Frame(Problem problem, Assignment assignment) {}
+    private record Frame(Problem problem, Assignment assignment) {
+    }
 
     @Override
     public Stream<Assignment> apply(final Problem problem) {
@@ -221,6 +224,13 @@ static class Clauses {
 
 /// A sudoku problem.
 static class Sudoku {
+
+    record Solution(int[][] grid) {
+        @Override
+        public String toString() {
+            return Arrays.deepToString(grid).replace("],", "]\n");
+        }
+    }
 
     private final int[][] grid;
     private final Problem problem;
@@ -302,15 +312,15 @@ static class Sudoku {
                 1; // variables must be strictly positive
     }
 
-    public Stream<int[][]> solutions() {
+    public Stream<Solution> solutions() {
         return solutionsUsing(Solve.DEFAULT);
     }
 
-    public Stream<int[][]> solutionsUsing(final Solve solve) {
+    public Stream<Solution> solutionsUsing(final Solve solve) {
         return solve.apply(problem).map(Sudoku::gridFrom);
     }
 
-    private static int[][] gridFrom(final Assignment assignment) {
+    private static Solution gridFrom(final Assignment assignment) {
         final List<Literal> literals = assignment.literals();
         final int[][] grid = new int[9][9];
         for (final Literal literal : literals) {
@@ -323,12 +333,12 @@ static class Sudoku {
             final int row = (literalValue - 1) / (9 * 9);
             grid[row][column] = value + 1;
         }
-        return grid;
+        return new Solution(grid);
     }
 
     @Override
     public String toString() {
-        return Arrays.deepToString(grid).replace("],", "\n");
+        return Arrays.deepToString(grid).replace("],", "]\n");
     }
 }
 
@@ -364,9 +374,7 @@ void main() {
     for (int i = 0; i < 3; i++) {
         IO.println("Run #" + (i + 1) + ":");
         final long before = System.currentTimeMillis();
-        sudoku.solutions()
-                .map(s -> Arrays.deepToString(s).replace("],", "\n"))
-                .forEach(IO::println);
+        sudoku.solutions().forEach(IO::println);
         final long after = System.currentTimeMillis();
         IO.println("Time: " + (after - before) + " ms");
     }
@@ -375,9 +383,7 @@ void main() {
     for (int i = 0; i < 3; i++) {
         IO.println("Run #" + (i + 1) + ":");
         final long before = System.currentTimeMillis();
-        sudoku.solutionsUsing(new ExplicitStackSolver())
-                .map(s -> Arrays.deepToString(s).replace("],", "\n"))
-                .forEach(IO::println);
+        sudoku.solutionsUsing(new ExplicitStackSolver()).forEach(IO::println);
         final long after = System.currentTimeMillis();
         IO.println("Time: " + (after - before) + " ms");
     }
