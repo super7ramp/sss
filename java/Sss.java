@@ -142,8 +142,56 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
         return Stream.of(1).flatMap(i -> Stream.of(supplier.get()));
     }
 
-    private Problem propagate(final Literal literal, Problem problem) {
+    default Problem propagate(final Literal literal, Problem problem) {
         return Propagate.DEFAULT.apply(literal, problem);
+    }
+}
+
+/// Implementation of Solve that uses an explicit stack rather than recursion.
+///
+/// Prevents stack overflow for large problems.
+static class ExplicitStackSolver implements Solve {
+
+    private record Frame(Problem problem, Assignment assignment) {}
+
+    @Override
+    public Stream<Assignment> apply(final Problem problem) {
+        return Stream.of(problem).gather(solutions());
+    }
+
+    private Gatherer<Problem, ArrayDeque<Frame>, Assignment> solutions() {
+        return Gatherer.ofSequential(ArrayDeque::new, (stack, root, downstream) -> {
+            stack.push(new Frame(root, Assignment.EMPTY));
+
+            while (!stack.isEmpty()) {
+                final Frame frame = stack.pop();
+                final Problem problem = frame.problem();
+                final Assignment assignment = frame.assignment();
+
+                if (problem.isEmpty()) {
+                    if (downstream.push(assignment)) {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+
+                final Clause headClause = problem.head();
+                if (headClause.isEmpty()) {
+                    continue;
+                }
+
+                final Literal literal = headClause.head();
+
+                final Problem literalPropagated = propagate(literal, problem);
+                final Problem negatedLiteralPropagated = propagate(literal.negated(), problem);
+
+                stack.push(new Frame(negatedLiteralPropagated, assignment.prependedWith(literal.negated())));
+                stack.push(new Frame(literalPropagated, assignment.prependedWith(literal)));
+            }
+
+            return false;
+        });
     }
 }
 
@@ -311,11 +359,26 @@ void main() {
             {0, 3, 8, 0, 0, 0, 4, 6, 0}});
     IO.println("Input:");
     IO.println(sudoku);
-    IO.println("Solutions:");
-    long before = System.currentTimeMillis();
-    sudoku.solutions()
-            .map(s -> Arrays.deepToString(s).replace("],", "\n"))
-            .forEach(IO::println);
-    long after = System.currentTimeMillis();
-    IO.println("Time: " + (after - before) + " ms");
+
+    IO.println("Solutions (using recursive solver):");
+    for (int i = 0; i < 3; i++) {
+        IO.println("Run #" + (i + 1) + ":");
+        final long before = System.currentTimeMillis();
+        sudoku.solutions()
+                .map(s -> Arrays.deepToString(s).replace("],", "\n"))
+                .forEach(IO::println);
+        final long after = System.currentTimeMillis();
+        IO.println("Time: " + (after - before) + " ms");
+    }
+
+    IO.println("Solutions (using non-recursive solver):");
+    for (int i = 0; i < 3; i++) {
+        IO.println("Run #" + (i + 1) + ":");
+        final long before = System.currentTimeMillis();
+        sudoku.solutionsUsing(new ExplicitStackSolver())
+                .map(s -> Arrays.deepToString(s).replace("],", "\n"))
+                .forEach(IO::println);
+        final long after = System.currentTimeMillis();
+        IO.println("Time: " + (after - before) + " ms");
+    }
 }
