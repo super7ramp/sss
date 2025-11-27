@@ -10,18 +10,44 @@
                       (halt-when empty? (fn [_ empty-clause] [empty-clause]))))
        (sort-by count)))
 
-(defn solve
-  "Solves a SAT problem represented as a list of clauses."
-  [problem]
-  (cond (empty? problem) [[]]
-        (empty? (first problem)) []
-        :else (let [[[literal]] problem]
-                (concat (->> (propagate literal problem)
-                             solve
-                             (map #(cons literal %)))
-                        (->> (propagate (- literal) problem)
-                             solve
-                             (map #(cons (- literal) %)))))))
+(defprotocol Solver
+  "SAT Solver."
+  (solve [this problem] "Solves a SAT problem represented as a list of clauses."))
+
+(def DefaultSolver
+  "Default Solver implementation."
+  (reify
+    Solver
+    (solve [this problem]
+      (cond (empty? problem) [[]]
+            (empty? (first problem)) []
+            :else (let [[[literal]] problem]
+                    (concat (->> (propagate literal problem)
+                                 (solve this)
+                                 (map #(cons literal %)))
+                            (->> (propagate (- literal) problem)
+                                 (solve this)
+                                 (map #(cons (- literal) %)))))))))
+
+(def ExplicitStackSolver
+  "Implementation of Solver that uses an explicit stack rather than recursion.
+   Prevents stack overflow for large problems."
+  (reify Solver
+    (solve [_this problem]
+      (loop [stack (list [problem '()]), assignments []]
+        (if (empty? stack)
+          assignments
+          (let [[clauses assignment] (first stack), stack (rest stack)]
+            (cond
+              (empty? clauses) (recur stack (conj assignments assignment))
+              (empty? (first clauses)) (recur stack assignments)
+              :else (let [literal (ffirst clauses)
+                          propagation (propagate literal clauses)
+                          negated-propagation (propagate (- literal) clauses)
+                          stack (-> stack
+                                    (conj [negated-propagation (cons (- literal) assignment)])
+                                    (conj [propagation (cons literal assignment)]))]
+                      (recur stack assignments)))))))))
 
 ; clause helpers
 
@@ -83,15 +109,17 @@
 
 (defn sudoku
   "Solves a sudoku puzzle represented as a 9x9 grid with 0 for empty cells."
-  [grid]
-  (let [clauses (sudoku-grid->clauses grid)]
-    (->> (solve clauses)
-         (map assignment->sudoku-grid))))
+  ([grid]
+   (sudoku grid DefaultSolver))
+  ([grid solver]
+   (let [clauses (sudoku-grid->clauses grid)]
+     (->> (solve solver clauses)
+          (map assignment->sudoku-grid)))))
 
 (defn -main []
   (println "Example: Trivial clauses")
   (println "Input: (1 or 2) and (-2 or 3)")
-  (println (time (solve [[1 2] [-2 3]])))
+  (println (time (solve DefaultSolver [[1 2] [-2 3]])))
 
   (println "Example: A sudoku problem")
   (println "Input:")
@@ -105,5 +133,13 @@
               [5 0 0 2 0 4 0 0 9]
               [0 3 8 0 0 0 4 6 0]]]
     (pprint grid)
-    (println "Solutions:")
-    (pprint (time (sudoku grid)))))
+
+    (println "Solutions (using recursive solver):")
+    (dotimes [run 3]
+      (println "Run #" (inc run) ":")
+      (pprint (time (sudoku grid))))
+
+    (println "Solutions (using non-recursive solver):")
+    (dotimes [run 3]
+      (println "Run #" (inc run) ":")
+      (pprint (time (sudoku grid ExplicitStackSolver))))))
