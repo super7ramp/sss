@@ -44,9 +44,10 @@ func (p Problem) Head() Clause {
 	return p[0]
 }
 
+// Assignment represents a set of literals satisfying a Problem.
 type Assignment []Literal
 
-// Propagator defines the interface for unit propagation in a SAT solver.
+// Propagator is a function that propagates a unit clause (a literal) to simplify the problem.
 type Propagator interface {
 	Propagate(literal Literal, problem Problem) Problem
 }

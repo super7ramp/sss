@@ -2,7 +2,7 @@
   (:require [clojure.pprint :refer [pprint]]))
 
 (defn- propagate
-  "Propagates a literal in a SAT problem, to simplify the problem."
+  "Propagates a unit clause (a literal), to simplify the problem."
   [literal problem]
   (->> problem
        (into [] (comp (remove (fn [clause] (some #(== literal %) clause)))
@@ -12,7 +12,10 @@
 
 (defprotocol Solver
   "SAT Solver."
-  (solve [this problem] "Solves a SAT problem represented as a list of clauses."))
+  (solve [this problem]
+    "Solves a SAT problem, represented as a conjunction (= 'and') of clauses.
+    Clauses are disjunctions (= 'or') of literals, represented by integers.
+    E.g., `[[1 -2] [2 3]]` represents (1 or -2) and (2 or 3)."))
 
 (def DefaultSolver
   "Default Solver implementation."

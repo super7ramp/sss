@@ -1,6 +1,6 @@
 import static java.util.Comparator.comparingInt;
 
-/// A literal in a SAT problem.
+/// Literal represents a propositional logic literal.
 ///
 /// @param value the value of the literal - cannot be 0
 record Literal(int value) {
@@ -15,7 +15,7 @@ record Literal(int value) {
     }
 }
 
-/// A clause in a SAT problem.
+/// Clause represents a disjunction ("or") of literals.
 ///
 /// @param literals the literals of this clause
 record Clause(SequencedCollection<Literal> literals) {
@@ -50,7 +50,7 @@ record Clause(SequencedCollection<Literal> literals) {
     }
 }
 
-/// A SAT problem.
+/// Problem represents a conjunction ("and") of clauses.
 ///
 /// @param clauses the clauses of this problem
 record Problem(SequencedCollection<Clause> clauses) {
@@ -67,7 +67,7 @@ record Problem(SequencedCollection<Clause> clauses) {
     }
 }
 
-/// An assignment of literals to a SAT problem.
+/// Assignment represents a set of literals satisfying a Problem.
 ///
 /// @param literals the literals of this assignment
 record Assignment(List<Literal> literals) {
@@ -81,10 +81,9 @@ record Assignment(List<Literal> literals) {
     }
 }
 
-/// A function that propagates a literal in a SAT problem, to simplify the problem.
+/// A function that propagates a unit clause (a literal) to simplify the problem.
 interface Propagate extends BiFunction<Literal, Problem, Problem> {
-    Propagate DEFAULT = new Propagate() {
-    };
+    Propagate DEFAULT = new Propagate() {};
     Gatherer<Clause, Void, Clause> HALT_WHEN_CLAUSE_EMPTY = haltWhen(Clause::isEmpty);
     Comparator<Clause> COMPARING_BY_CLAUSE_SIZE = comparingInt(Clause::size);
 
@@ -113,8 +112,7 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
 
 /// A function that solves a SAT problem.
 interface Solve extends Function<Problem, Stream<Assignment>> {
-    Solve DEFAULT = new Solve() {
-    };
+    Solve DEFAULT = new Solve() {};
 
     @Override
     default Stream<Assignment> apply(final Problem problem) {
@@ -154,8 +152,7 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
 /// Prevents stack overflow for large problems.
 static class ExplicitStackSolver implements Solve {
 
-    private record Frame(Problem problem, Assignment assignment) {
-    }
+    private record Frame(Problem problem, Assignment assignment) {}
 
     @Override
     public Stream<Assignment> apply(final Problem problem) {
