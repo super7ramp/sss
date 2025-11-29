@@ -8,11 +8,20 @@ written in several programming languages for educational purposes.
 ### Clojure
 
 ```shell
-cd clojure && clojure -m sss
+cd clojure
+clojure -m sss
+```
+
+### Go
+
+```shell
+cd go
+go run sss.go
 ```
 
 ### Java
 
 ```shell
-java java/Sss.java
+cd java
+java Sss.java
 ```
