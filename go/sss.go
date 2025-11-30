@@ -48,13 +48,10 @@ func (p Problem) Head() Clause {
 type Assignment []Literal
 
 // Propagator is a function that propagates a unit clause (a literal) to simplify the problem.
-type Propagator interface {
-	Propagate(literal Literal, problem Problem) Problem
-}
+type Propagator func(literal Literal, problem Problem) Problem
 
-type DefaultPropagator struct{}
-
-func (_ *DefaultPropagator) Propagate(literal Literal, problem Problem) Problem {
+// DefaultPropagator is the default Propagator implementation.
+func DefaultPropagator(literal Literal, problem Problem) Problem {
 	negatedLiteral := literal.Negate()
 	var clausesAfterPropagation Problem
 	for _, clause := range problem {
@@ -62,7 +59,7 @@ func (_ *DefaultPropagator) Propagate(literal Literal, problem Problem) Problem 
 			continue
 		}
 		updatedClause := clause.Without(negatedLiteral)
-		if updatedClause == nil {
+		if updatedClause.IsEmpty() {
 			return []Clause{[]Literal{}}
 		}
 		clausesAfterPropagation = append(clausesAfterPropagation, updatedClause)
@@ -82,11 +79,11 @@ type Solver interface {
 }
 
 type DefaultSolver struct {
-	propagator Propagator
+	propagate Propagator
 }
 
 func NewDefaultSolver() *DefaultSolver {
-	return &DefaultSolver{propagator: &DefaultPropagator{}}
+	return &DefaultSolver{propagate: DefaultPropagator}
 }
 
 func (s *DefaultSolver) Solve(problem Problem) []Assignment {
@@ -116,10 +113,6 @@ func (s *DefaultSolver) Solve(problem Problem) []Assignment {
 	}
 
 	return slices.Concat(assignmentsWithLiteral, assignmentsWithLiteralNegated)
-}
-
-func (s *DefaultSolver) propagate(literal Literal, problem Problem) Problem {
-	return s.propagator.Propagate(literal, problem)
 }
 
 func main() {

@@ -1,5 +1,5 @@
 (ns sss
-  (:require [clojure.pprint :refer [pprint]]))
+  (:require [clojure.pprint :as pp :refer [pprint]]))
 
 (defn- propagate
   "Propagates a unit clause (a literal), to simplify the problem."
@@ -15,7 +15,7 @@
   (solve [this problem]
     "Solves a SAT problem, represented as a conjunction (= 'and') of clauses.
     Clauses are disjunctions (= 'or') of literals, represented by integers.
-    E.g., `[[1 -2] [2 3]]` represents (1 or -2) and (2 or 3)."))
+    E.g., `[[1 -2] [2 3]]` represents (1 or (not 2)) and (2 or 3)."))
 
 (def DefaultSolver
   "Default Solver implementation."
@@ -24,13 +24,13 @@
     (solve [this problem]
       (cond (empty? problem) [[]]
             (empty? (first problem)) []
-            :else (let [[[literal]] problem]
+            :else (let [literal (ffirst problem), negated-literal (- literal)]
                     (concat (->> (propagate literal problem)
                                  (solve this)
                                  (map #(cons literal %)))
-                            (->> (propagate (- literal) problem)
+                            (->> (propagate negated-literal problem)
                                  (solve this)
-                                 (map #(cons (- literal) %)))))))))
+                                 (map #(cons negated-literal %)))))))))
 
 (def ExplicitStackSolver
   "Implementation of Solver that uses an explicit stack rather than recursion.
@@ -46,11 +46,16 @@
               (empty? (first clauses)) (recur stack assignments)
               :else (let [literal (ffirst clauses)
                           propagation (propagate literal clauses)
-                          negated-propagation (propagate (- literal) clauses)
+                          negated-literal (- literal)
+                          negated-propagation (propagate negated-literal clauses)
                           stack (-> stack
-                                    (conj [negated-propagation (cons (- literal) assignment)])
+                                    (conj [negated-propagation (cons negated-literal assignment)])
                                     (conj [propagation (cons literal assignment)]))]
                       (recur stack assignments)))))))))
+
+(defprotocol Solvable
+  "A problem that can be solved with a Solver."
+  (solutions [this] [this solver]))
 
 ; clause helpers
 
@@ -101,23 +106,30 @@
     (let [empty-grid (vec (repeat 9 (vec (repeat 9 0))))]
       (reduce (fn [grid literal]
                 (if (pos? literal)
-                  (let [var (abs literal)
-                        digit (mod (dec var) 9)
-                        col (mod (quot (dec var) 9) 9)
-                        row (quot (dec var) (* 9 9))]
-                    (assoc-in grid [row col] (inc digit)))
+                  (let [digit (inc (mod (dec literal) 9))
+                        col (mod (quot (dec literal) 9) 9)
+                        row (quot (dec literal) (* 9 9))]
+                    (assoc-in grid [row col] digit))
                   grid))
               empty-grid
               assignment))))
 
-(defn sudoku
-  "Solves a sudoku puzzle represented as a 9x9 grid with 0 for empty cells."
-  ([grid]
-   (sudoku grid DefaultSolver))
-  ([grid solver]
-   (let [clauses (sudoku-grid->clauses grid)]
-     (->> (solve solver clauses)
-          (map assignment->sudoku-grid)))))
+(defrecord Sudoku [grid clauses]
+  Solvable
+  (solutions [this]
+    (solutions this DefaultSolver))
+  (solutions [_this solver]
+    (->> (solve solver clauses)
+         (map assignment->sudoku-grid))))
+
+(defmethod pp/simple-dispatch Sudoku
+  [sudoku] (pprint (:grid sudoku)))
+
+(defn make-sudoku
+  "Creates a Sudoku instance from a 9x9 grid, with 0 for empty cells."
+  [grid]
+  (let [clauses (sudoku-grid->clauses grid)]
+    (Sudoku. grid clauses)))
 
 (defn -main []
   (println "Example: Trivial clauses")
@@ -126,23 +138,23 @@
 
   (println "Example: A sudoku problem")
   (println "Input:")
-  (let [grid [[0 2 6 0 0 0 8 1 0]
-              [3 0 0 7 0 8 0 0 6]
-              [4 0 0 0 5 0 0 0 7]
-              [0 5 0 1 0 7 0 9 0]
-              [0 0 3 9 0 5 1 0 0]
-              [0 4 0 3 0 2 0 5 0]
-              [1 0 0 0 3 0 0 0 2]
-              [5 0 0 2 0 4 0 0 9]
-              [0 3 8 0 0 0 4 6 0]]]
-    (pprint grid)
+  (let [sudoku (make-sudoku [[0 2 6 0 0 0 8 1 0]
+                             [3 0 0 7 0 8 0 0 6]
+                             [4 0 0 0 5 0 0 0 7]
+                             [0 5 0 1 0 7 0 9 0]
+                             [0 0 3 9 0 5 1 0 0]
+                             [0 4 0 3 0 2 0 5 0]
+                             [1 0 0 0 3 0 0 0 2]
+                             [5 0 0 2 0 4 0 0 9]
+                             [0 3 8 0 0 0 4 6 0]])]
+    (pprint sudoku)
 
     (println "Solutions (using recursive solver):")
     (dotimes [run 3]
       (println "Run #" (inc run) ":")
-      (pprint (time (sudoku grid))))
+      (pprint (time (solutions sudoku))))
 
     (println "Solutions (using non-recursive solver):")
     (dotimes [run 3]
       (println "Run #" (inc run) ":")
-      (pprint (time (sudoku grid ExplicitStackSolver))))))
+      (pprint (time (solutions sudoku ExplicitStackSolver))))))
