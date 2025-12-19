@@ -111,6 +111,8 @@ interface Propagate extends BiFunction<Literal, Problem, Problem> {
 }
 
 /// A function that solves a SAT problem.
+///
+/// Default implementation is recursive.
 interface Solve extends Function<Problem, Stream<Assignment>> {
     Solve DEFAULT = new Solve() {};
 
@@ -147,10 +149,10 @@ interface Solve extends Function<Problem, Stream<Assignment>> {
     }
 }
 
-/// Implementation of Solve that uses an explicit stack rather than recursion.
+/// Iterative implementation of {@link Solve}.
 ///
-/// Prevents stack overflow for large problems.
-static class ExplicitStackSolver implements Solve {
+///  Mimics recursion using a stack allocated on the heap. Prevents stack overflow for large problems.
+static class IterativeSolver implements Solve {
 
     private record Frame(Problem problem, Assignment assignment) {}
 
@@ -376,11 +378,11 @@ void main() {
         IO.println("Time: " + (after - before) + " ms");
     }
 
-    IO.println("Solutions (using non-recursive solver):");
+    IO.println("Solutions (using iterative solver):");
     for (int i = 0; i < 3; i++) {
         IO.println("Run #" + (i + 1) + ":");
         final long before = System.currentTimeMillis();
-        sudoku.solutionsUsing(new ExplicitStackSolver()).forEach(IO::println);
+        sudoku.solutionsUsing(new IterativeSolver()).forEach(IO::println);
         final long after = System.currentTimeMillis();
         IO.println("Time: " + (after - before) + " ms");
     }

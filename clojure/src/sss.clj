@@ -18,9 +18,8 @@
     E.g., `[[1 -2] [2 3]]` represents (1 or (not 2)) and (2 or 3)."))
 
 (def DefaultSolver
-  "Default Solver implementation."
-  (reify
-    Solver
+  "Default implementation of Solver. Recursive."
+  (reify Solver
     (solve [this problem]
       (cond (empty? problem) [[]]
             (empty? (first problem)) []
@@ -32,8 +31,8 @@
                                  (solve this)
                                  (map #(cons negated-literal %)))))))))
 
-(def ExplicitStackSolver
-  "Implementation of Solver that uses an explicit stack rather than recursion.
+(def IterativeSolver
+  "Iterative implementation of Solver. Mimics recursion using a stack allocated on the heap.
    Prevents stack overflow for large problems."
   (reify Solver
     (solve [_this problem]
@@ -154,7 +153,7 @@
       (println "Run #" (inc run) ":")
       (pprint (time (solutions sudoku))))
 
-    (println "Solutions (using non-recursive solver):")
+    (println "Solutions (using iterative solver):")
     (dotimes [run 3]
       (println "Run #" (inc run) ":")
-      (pprint (time (solutions sudoku ExplicitStackSolver))))))
+      (pprint (time (solutions sudoku IterativeSolver))))))
