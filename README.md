@@ -7,7 +7,7 @@ written in several programming languages for educational purposes.
 
 ### APL
 
-Copy-paste [./apl/sss.apl] into [TryAPL](https://tryapl.org/).
+Copy-paste [sss.apl](./apl/sss.apl) into [TryAPL](https://tryapl.org/).
 
 ### Clojure
 
