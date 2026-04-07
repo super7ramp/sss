@@ -5,6 +5,10 @@ written in several programming languages for educational purposes.
 
 ## Run examples
 
+### APL
+
+Copy-paste [./apl/sss.apl] into [TryAPL](https://tryapl.org/).
+
 ### Clojure
 
 ```shell

@@ -3,5 +3,6 @@
 target
 out
 .cpcache
+.lsp
 .nrepl-port
 **/.clj-kondo/.cache
