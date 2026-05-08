@@ -1,10 +1,8 @@
-⍝ Propagates a unit clause (a literal), to simplify the problem.
+⍝ Propagates a unit clause ⍺ (a literal), to simplify the problem ⍵ (a list of clauses).
 propagate ← {
-    (literal clauses) ← ⍵ ⋄
-    clausesNotContainingLiteral ← (literal (~∊) ¨ clauses) / clauses ⋄
-    clausesWithNegatedLiteralRemoved ← clausesNotContainingLiteral ~¨⊂ -literal ⋄
-    indicesSortedByClauseCount ← ⍋≢¨ clausesWithNegatedLiteralRemoved ⋄
-    clausesWithNegatedLiteralRemoved[indicesSortedByClauseCount]
+    clausesNotContainingLiteral ← (~⍺∊¨⍵)/⍵ ⋄
+    clausesWithNegatedLiteralRemoved ← clausesNotContainingLiteral ~¨ -⍺ ⋄
+    clausesWithNegatedLiteralRemoved[⍋≢¨ clausesWithNegatedLiteralRemoved]
 }
 
 ⍝ A recursive SAT solver
@@ -13,8 +11,8 @@ solve ← {
     (⊂⍬) ∊ ⍵ : ⍬ ⋄
     literal ← ⊃⊃⍵ ⋄
     negatedLiteral ← -literal ⋄
-    leftPropagation ← (∇ propagate literal ⍵) ,¨ literal ⋄
-    rightPropagation ← (∇ propagate negatedLiteral ⍵) ,¨ negatedLiteral ⋄
+    leftPropagation ← (∇ literal propagate ⍵) ,¨ literal ⋄
+    rightPropagation ← (∇ negatedLiteral propagate ⍵) ,¨ negatedLiteral ⋄
     leftPropagation , rightPropagation
 }
 
