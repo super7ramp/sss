@@ -9,6 +9,10 @@ written in several programming languages for educational purposes.
 
 Copy-paste [sss.apl](./apl/sss.apl) into [TryAPL](https://tryapl.org/).
 
+### BQN
+
+Copy-paste [sss.bqn](./bqn/sss.bqn) into [BQNPad](https://bqnpad.mechanize.systems/).
+
 ### Clojure
 
 ```shell
