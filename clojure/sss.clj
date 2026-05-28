@@ -130,30 +130,29 @@
   (let [clauses (sudoku-grid->clauses grid)]
     (Sudoku. grid clauses)))
 
-(defn -main []
-  (println "Example: Trivial clauses")
-  (println "Input: (1 or 2) and (-2 or 3)")
-  (println (time (solve DefaultSolver [[1 2] [-2 3]])))
+(println "Example: Trivial clauses")
+(println "Input: (1 or 2) and (-2 or 3)")
+(println (time (solve DefaultSolver [[1 2] [-2 3]])))
 
-  (println "Example: A sudoku problem")
-  (println "Input:")
-  (let [sudoku (make-sudoku [[0 2 6 0 0 0 8 1 0]
-                             [3 0 0 7 0 8 0 0 6]
-                             [4 0 0 0 5 0 0 0 7]
-                             [0 5 0 1 0 7 0 9 0]
-                             [0 0 3 9 0 5 1 0 0]
-                             [0 4 0 3 0 2 0 5 0]
-                             [1 0 0 0 3 0 0 0 2]
-                             [5 0 0 2 0 4 0 0 9]
-                             [0 3 8 0 0 0 4 6 0]])]
-    (pprint sudoku)
+(println "Example: A sudoku problem")
+(println "Input:")
+(let [sudoku (make-sudoku [[0 2 6 0 0 0 8 1 0]
+                           [3 0 0 7 0 8 0 0 6]
+                           [4 0 0 0 5 0 0 0 7]
+                           [0 5 0 1 0 7 0 9 0]
+                           [0 0 3 9 0 5 1 0 0]
+                           [0 4 0 3 0 2 0 5 0]
+                           [1 0 0 0 3 0 0 0 2]
+                           [5 0 0 2 0 4 0 0 9]
+                           [0 3 8 0 0 0 4 6 0]])]
+  (pprint sudoku)
 
-    (println "Solutions (using recursive solver):")
-    (dotimes [run 3]
-      (println "Run #" (inc run) ":")
-      (pprint (time (solutions sudoku))))
+  (println "Solutions (using recursive solver):")
+  (dotimes [run 3]
+    (println "Run #" (inc run) ":")
+    (pprint (time (solutions sudoku))))
 
-    (println "Solutions (using iterative solver):")
-    (dotimes [run 3]
-      (println "Run #" (inc run) ":")
-      (pprint (time (solutions sudoku IterativeSolver))))))
+  (println "Solutions (using iterative solver):")
+  (dotimes [run 3]
+    (println "Run #" (inc run) ":")
+    (pprint (time (solutions sudoku IterativeSolver)))))

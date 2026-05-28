@@ -17,7 +17,7 @@ Copy-paste [sss.bqn](./bqn/sss.bqn) into [BQNPad](https://bqnpad.mechanize.syste
 
 ```shell
 cd clojure
-clojure -m sss
+clj -M sss.clj
 ```
 
 ### Go
