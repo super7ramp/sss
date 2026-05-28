@@ -33,3 +33,10 @@ go run sss.go
 cd java
 java Sss.java
 ```
+
+### Uiua
+
+```shell
+cd uiua
+uiua sss.ua
+```
