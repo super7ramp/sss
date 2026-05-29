@@ -1,11 +1,9 @@
-# Experimental!
-
 # Propagates a unit clause
 # ? literal clauses
 Propagate ← (
-  ⟜(▽⊸(¬≡◇/∨=)) # literal RemoveClausesWithLiteral ? literal clauses
-  ⍚▽⊸≠¯         # RemoveNegatedLiteral ? literal clauses
-  ⊏⊸(⍏⍚⧻)       # SortByClauseSize ? clauses
+  ⟜(▽¬⊸≡◇˜∊) # literal RemoveClausesWithLiteral ? literal clauses
+  ⍚▽⊸≠¯      # RemoveNegatedLiteral ? literal clauses
+  ⊏⍏⊸⍚⧻      # SortByClauseSize ? clauses
 )
 
 # A recursive SAT solver
@@ -13,7 +11,7 @@ Propagate ← (
 Solve ← |1 ⍣(
   ⍩{[]} °0 ⧻
 | ⍩[] °0 ◇⧻⊢
-| ⊂∩⍚˜⊂∩⤚(Solve Propagate)(◇⊢⊸⊢)⟜(¯◇⊢⊸⊢)
+| ⊂∩⍚˜⊂∩⤚(Solve Propagate)⊃(◇⊢⊸⊢)(¯◇⊢⊸⊢)
 )
 
 &s "Example: Trivial clauses"
