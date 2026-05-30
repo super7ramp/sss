@@ -8,7 +8,6 @@ Propagate                ← SortByClauseSize ⊣ RemoveNegatedLiteral RemoveCla
 Solve ← {
   0 = ≠𝕩 ? ⟨⟨⟩⟩ ;
   0 = ≠⊑𝕩 ? ⟨⟩ ;
-  literal          ← ⊑⊑𝕩
   (∾ ○ (⊢∾¨ ⊢ 𝕊 Propagate⟜𝕩)) ⟜- ⊑⊑𝕩
 }
 
