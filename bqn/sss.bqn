@@ -1,15 +1,15 @@
 RemoveClausesWithLiteral ← (>¬∘∊¨) / ⊢
 RemoveNegatedLiteral     ← (-⊸≠/⊢)¨
 SortByClauseSize         ← (⍋≢¨) ⊏ ⊢
+# Propagates a unit clause (𝕨) to simplify the problem (𝕩)
 Propagate                ← SortByClauseSize ⊣ RemoveNegatedLiteral RemoveClausesWithLiteral
 
+# A recursive SAT solver
 Solve ← {
   0 = ≠𝕩 ? ⟨⟨⟩⟩ ;
   0 = ≠⊑𝕩 ? ⟨⟩ ;
   literal          ← ⊑⊑𝕩
-  leftPropagation  ← {𝕩 ∾ literal} ¨ (𝕊 literal Propagate 𝕩)
-  rightPropagation ← {𝕩 ∾ (-literal)} ¨ (𝕊 (-literal) Propagate 𝕩)
-  leftPropagation ∾ rightPropagation
+  (∾ ○ (⊢∾¨ ⊢ 𝕊 Propagate⟜𝕩)) ⟜- ⊑⊑𝕩
 }
 
 •Show "Example: Trivial clauses"
