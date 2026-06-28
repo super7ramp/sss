@@ -27,6 +27,13 @@ cd go
 go run sss.go
 ```
 
+### Haskell
+
+```shell
+cd haskell
+runhaskell sss.hs
+```
+
 ### Java
 
 ```shell
